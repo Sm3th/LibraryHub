@@ -1,0 +1,158 @@
+{% extends "Base.html" %}
+{% block title %}Profile — LibraryHub{% endblock %}
+
+{% block content %}
+
+<!-- Profile Hero -->
+<div class="profile-hero">
+    <div class="profile-avatar">{{ initials }}</div>
+    <div>
+        <div class="profile-name">{{ user.name }}</div>
+        <div class="profile-email"><i class="bi bi-envelope"></i> {{ user.email }}</div>
+        <div class="profile-since">
+            <i class="bi bi-books"></i>
+            {{ all_books_count }} book{{ 's' if all_books_count != 1 }} in library
+        </div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <a href="{{ url_for('main.stats') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-bar-chart-line"></i> Full Stats
+        </a>
+        <a href="{{ url_for('main.add_book') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg"></i> Add Book
+        </a>
+    </div>
+</div>
+
+<div class="profile-grid">
+
+    <!-- Reading Goal Card -->
+    <div class="stats-section">
+        <div class="stats-section-title">
+            <i class="bi bi-trophy"></i> Reading Goal {{ current_year }}
+        </div>
+        <div style="font-size:0.9rem;color:var(--text-muted);margin-bottom:10px;">
+            {% if read_count >= goal_count %}
+                🎉 Goal achieved! You've read <strong style="color:var(--text);">{{ read_count }}</strong> books.
+            {% else %}
+                <strong style="color:var(--text);">{{ read_count }}</strong> / {{ goal_count }} books read
+                &mdash; <strong style="color:var(--primary);">{{ goal_count - read_count }}</strong> to go
+            {% endif %}
+        </div>
+        <div class="goal-bar-track">
+            <div class="goal-bar-fill" style="width:{{ goal_pct }}%;"></div>
+        </div>
+        <div class="goal-bar-info">
+            <span>{{ goal_pct }}% complete</span>
+            <span>{{ goal_count }} book goal</span>
+        </div>
+
+        <div class="divider"></div>
+
+        <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">
+            Update Goal
+        </div>
+        <form action="{{ url_for('main.set_goal') }}" method="POST"
+              style="display:flex;gap:8px;align-items:center;">
+            <input type="number" name="goal_count" value="{{ goal_count }}"
+                   min="1" max="365" class="form-control"
+                   style="width:80px;font-size:0.9rem;">
+            <span style="font-size:0.85rem;color:var(--text-muted);white-space:nowrap;">books for {{ current_year }}</span>
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-check-lg"></i> Save
+            </button>
+        </form>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="stats-section">
+        <div class="stats-section-title">
+            <i class="bi bi-lightning-charge"></i> Quick Stats
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div style="text-align:center;background:var(--bg);border-radius:var(--radius-sm);padding:16px;">
+                <div class="profile-stat-big" style="color:#10b981;">{{ read_count }}</div>
+                <div class="profile-stat-label">Books Read</div>
+            </div>
+            <div style="text-align:center;background:var(--bg);border-radius:var(--radius-sm);padding:16px;">
+                <div class="profile-stat-big" style="color:#3b82f6;">{{ reading_count }}</div>
+                <div class="profile-stat-label">Reading Now</div>
+            </div>
+            <div style="text-align:center;background:var(--bg);border-radius:var(--radius-sm);padding:16px;">
+                <div class="profile-stat-big" style="color:#f59e0b;">{{ avg_rating if avg_rating else '—' }}</div>
+                <div class="profile-stat-label">Avg Rating</div>
+            </div>
+            <div style="text-align:center;background:var(--bg);border-radius:var(--radius-sm);padding:16px;">
+                <div class="profile-stat-big" style="color:#8b5cf6;">{{ all_books_count }}</div>
+                <div class="profile-stat-label">Total Books</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Favorite Genre -->
+    <div class="stats-section">
+        <div class="stats-section-title">
+            <i class="bi bi-heart-fill"></i> Favorite Genre
+        </div>
+        <div style="text-align:center;padding:20px 0;">
+            <div style="font-size:3rem;margin-bottom:10px;">
+                {% if favorite_genre == 'Novel' %}📕
+                {% elif favorite_genre == 'Science Fiction' %}🚀
+                {% elif favorite_genre == 'Biography' %}👤
+                {% elif favorite_genre == 'History' %}🏛️
+                {% elif favorite_genre == 'Fantasy' %}🧙
+                {% elif favorite_genre == 'Mystery' %}🔍
+                {% elif favorite_genre == 'Self-Help' %}💡
+                {% elif favorite_genre == 'Philosophy' %}🤔
+                {% else %}📚
+                {% endif %}
+            </div>
+            <div style="font-size:1.3rem;font-weight:700;color:var(--text);">{{ favorite_genre }}</div>
+            <div style="font-size:0.82rem;color:var(--text-muted);margin-top:4px;">Your most-read genre</div>
+        </div>
+    </div>
+
+    <!-- Reading Progress Overview -->
+    <div class="stats-section">
+        <div class="stats-section-title">
+            <i class="bi bi-pie-chart-fill"></i> Reading Status
+        </div>
+        {% if all_books_count > 0 %}
+        <div style="margin-bottom:12px;">
+            <div class="hbar-item">
+                <div class="hbar-label">Read</div>
+                <div class="hbar-track">
+                    <div class="hbar-fill" style="width:{{ (read_count / all_books_count * 100) | round | int }}%;background:linear-gradient(90deg,#10b981,#6ee7b7);"></div>
+                </div>
+                <div class="hbar-count">{{ read_count }}</div>
+            </div>
+            <div class="hbar-item">
+                <div class="hbar-label">Reading</div>
+                <div class="hbar-track">
+                    <div class="hbar-fill" style="width:{{ (reading_count / all_books_count * 100) | round | int }}%;background:linear-gradient(90deg,#3b82f6,#93c5fd);"></div>
+                </div>
+                <div class="hbar-count">{{ reading_count }}</div>
+            </div>
+            <div class="hbar-item">
+                <div class="hbar-label">Unread</div>
+                <div class="hbar-track">
+                    <div class="hbar-fill" style="width:{{ (unread_count / all_books_count * 100) | round | int }}%;background:linear-gradient(90deg,#94a3b8,#cbd5e1);"></div>
+                </div>
+                <div class="hbar-count">{{ unread_count }}</div>
+            </div>
+        </div>
+        <div style="text-align:center;margin-top:16px;">
+            <a href="{{ url_for('main.stats') }}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-bar-chart-line"></i> View Full Statistics
+            </a>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:24px 0;color:var(--text-muted);">
+            <div style="font-size:2rem;margin-bottom:8px;">📚</div>
+            Add some books to see your reading stats
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

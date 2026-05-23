@@ -1,0 +1,254 @@
+{% extends "Base.html" %}
+{% block title %}Statistics — LibraryHub{% endblock %}
+
+{% block content %}
+
+<!-- Hero: Reading Goal -->
+<div class="stats-hero">
+    <!-- SVG Circle Progress -->
+    <div class="goal-ring">
+        <svg viewBox="0 0 130 130">
+            <circle class="goal-ring-bg" cx="65" cy="65" r="52"/>
+            <circle class="goal-ring-fill" cx="65" cy="65" r="52"
+                    stroke-dasharray="326.73"
+                    stroke-dashoffset="{{ goal_offset }}"/>
+        </svg>
+        <div class="goal-ring-label">
+            <div class="goal-ring-pct">{{ goal_pct }}%</div>
+            <div class="goal-ring-small">complete</div>
+        </div>
+    </div>
+
+    <div class="goal-info">
+        <h2>{{ current_year }} Reading Goal</h2>
+        <p>
+            {% if read_count >= goal_count %}
+                🎉 You've hit your goal! You've read <strong>{{ read_count }}</strong> books this year.
+            {% else %}
+                You've read <strong>{{ read_count }}</strong> of <strong>{{ goal_count }}</strong> books.
+                <strong>{{ goal_count - read_count }}</strong> more to go!
+            {% endif %}
+        </p>
+        <form action="{{ url_for('main.set_goal') }}" method="POST">
+            <div class="goal-form-row">
+                <span>Set goal:</span>
+                <input type="number" name="goal_count" value="{{ goal_count }}"
+                       min="1" max="365" placeholder="{{ goal_count }}">
+                <button type="submit">Update</button>
+                <span>books for {{ current_year }}</span>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Key Metrics -->
+<div class="stats-grid" style="margin-bottom:24px;">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-book"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ all_books_count }}</div>
+            <div class="stat-label">Total Books</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ read_count }}</div>
+            <div class="stat-label">Read</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon amber"><i class="bi bi-book-half"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ reading_count }}</div>
+            <div class="stat-label">Currently Reading</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon purple"><i class="bi bi-star-fill"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ avg_rating if avg_rating else '—' }}</div>
+            <div class="stat-label">Avg Rating</div>
+        </div>
+    </div>
+</div>
+
+<!-- Two-column sections -->
+<div class="stats-two-col">
+
+    <!-- Category Breakdown -->
+    <div class="stats-section">
+        <div class="stats-section-title">
+            <i class="bi bi-tag"></i> Books by Category
+        </div>
+        {% if cat_counts %}
+            {% for cat, count in cat_counts %}
+            <div class="hbar-item">
+                <div class="hbar-label" title="{{ cat }}">{{ cat }}</div>
+                <div class="hbar-track">
+                    <div class="hbar-fill" style="width:{{ (count / max_cat * 100) | round | int }}%;"></div>
+                </div>
+                <div class="hbar-count">{{ count }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="font-size:0.85rem;color:var(--text-muted);">No books added yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Rating Distribution -->
+    <div class="stats-section">
+        <div class="stats-section-title">
+            <i class="bi bi-star-half"></i> Rating Distribution
+        </div>
+        {% set has_ratings = rating_dist.values() | sum > 0 %}
+        {% if has_ratings %}
+            {% for stars in range(5, 0, -1) %}
+            <div class="rating-bar-item">
+                <div class="rating-stars-label">
+                    {% for i in range(1, 6) %}{{ '★' if i <= stars else '☆' }}{% endfor %}
+                </div>
+                <div class="hbar-track">
+                    <div class="hbar-fill amber"
+                         style="width:{{ (rating_dist[stars] / max_rated * 100) | round | int }}%;"></div>
+                </div>
+                <div class="hbar-count">{{ rating_dist[stars] }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:0.875rem;">
+                <div style="font-size:2rem;margin-bottom:8px;">⭐</div>
+                Rate your books to see<br>the distribution here
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Reading Status Breakdown -->
+    <div class="stats-section">
+        <div class="stats-section-title">
+            <i class="bi bi-pie-chart"></i> Reading Status
+        </div>
+        <div class="status-donut">
+            <div class="donut-item">
+                <div class="donut-circle green">{{ read_count }}</div>
+                <div class="donut-label">Read</div>
+            </div>
+            <div class="donut-item">
+                <div class="donut-circle blue">{{ reading_count }}</div>
+                <div class="donut-label">Reading</div>
+            </div>
+            <div class="donut-item">
+                <div class="donut-circle gray">{{ unread_count }}</div>
+                <div class="donut-label">Unread</div>
+            </div>
+        </div>
+        {% if all_books_count > 0 %}
+        <div style="margin-top:16px;">
+            <div class="hbar-item">
+                <div class="hbar-label">Read</div>
+                <div class="hbar-track">
+                    <div class="hbar-fill" style="width:{{ (read_count / all_books_count * 100) | round | int }}%;background:linear-gradient(90deg,#10b981,#6ee7b7);"></div>
+                </div>
+                <div class="hbar-count">{{ (read_count / all_books_count * 100) | round | int }}%</div>
+            </div>
+            <div class="hbar-item">
+                <div class="hbar-label">Reading</div>
+                <div class="hbar-track">
+                    <div class="hbar-fill" style="width:{{ (reading_count / all_books_count * 100) | round | int }}%;background:linear-gradient(90deg,#3b82f6,#93c5fd);"></div>
+                </div>
+                <div class="hbar-count">{{ (reading_count / all_books_count * 100) | round | int }}%</div>
+            </div>
+            <div class="hbar-item">
+                <div class="hbar-label">Unread</div>
+                <div class="hbar-track">
+                    <div class="hbar-fill" style="width:{{ (unread_count / all_books_count * 100) | round | int }}%;background:linear-gradient(90deg,#94a3b8,#cbd5e1);"></div>
+                </div>
+                <div class="hbar-count">{{ (unread_count / all_books_count * 100) | round | int }}%</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Format Split -->
+    <div class="stats-section">
+        <div class="stats-section-title">
+            <i class="bi bi-collection"></i> Format Breakdown
+        </div>
+        <div class="format-split">
+            <div class="format-split-item">
+                <div class="format-split-icon">📖</div>
+                <div class="format-split-count">{{ physical_count }}</div>
+                <div class="format-split-label">Physical Books</div>
+            </div>
+            <div class="format-split-item">
+                <div class="format-split-icon">📱</div>
+                <div class="format-split-count">{{ ebook_count }}</div>
+                <div class="format-split-label">E-books</div>
+            </div>
+        </div>
+        {% if all_books_count > 0 %}
+        <div style="margin-top:16px;">
+            <div style="height:12px;background:var(--border);border-radius:6px;overflow:hidden;display:flex;">
+                <div style="width:{{ (physical_count / all_books_count * 100) | round | int }}%;background:linear-gradient(90deg,#4f46e5,#818cf8);transition:width 0.6s;"></div>
+                <div style="flex:1;background:linear-gradient(90deg,#f59e0b,#fcd34d);"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.73rem;color:var(--text-muted);margin-top:6px;">
+                <span style="color:var(--primary);">&#9632; Physical {{ (physical_count / all_books_count * 100) | round | int }}%</span>
+                <span style="color:#f59e0b;">&#9632; E-book {{ (ebook_count / all_books_count * 100) | round | int }}%</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Monthly Activity + Top Rated (full width) -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" class="stats-two-col">
+
+    <!-- Monthly Activity -->
+    <div class="stats-section">
+        <div class="stats-section-title">
+            <i class="bi bi-calendar3"></i> Books Added (Last 6 Months)
+        </div>
+        <div class="monthly-chart">
+            {% for m in monthly_data %}
+            <div class="monthly-col">
+                <div class="monthly-bar {% if m.count == 0 %}empty{% endif %}"
+                     style="height:{% if max_monthly > 0 and m.count > 0 %}{{ [8, (m.count / max_monthly * 75) | round | int] | max }}px{% else %}4px{% endif %};"></div>
+                <div class="monthly-label">{{ m.label }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        <div style="text-align:center;font-size:0.78rem;color:var(--text-muted);margin-top:12px;">
+            {{ books_this_year }} book{{ 's' if books_this_year != 1 }} added in {{ current_year }}
+        </div>
+    </div>
+
+    <!-- Top Rated -->
+    <div class="stats-section">
+        <div class="stats-section-title">
+            <i class="bi bi-trophy"></i> Top Rated Books
+        </div>
+        {% if top_books %}
+            {% for book in top_books %}
+            <div class="top-book-item">
+                <div class="top-book-rank">{{ loop.index }}</div>
+                <div class="top-book-info">
+                    <a href="{{ url_for('main.book_detail', book_id=book.id) }}"
+                       class="top-book-title" style="text-decoration:none;">{{ book.title }}</a>
+                    <div class="top-book-author">{{ book.author }}</div>
+                </div>
+                <div class="top-book-stars">
+                    {% for i in range(1,6) %}{{ '★' if i <= book.rating else '☆' }}{% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align:center;padding:20px 0;color:var(--text-muted);font-size:0.875rem;">
+                <div style="font-size:2rem;margin-bottom:8px;">🏆</div>
+                Rate your books to see<br>your top picks here
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

@@ -1,148 +1,281 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LibraryHub</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
-    <!-- Header -->
-    <header class="d-flex justify-content-between align-items-center border-bottom p-3">
-        <div class="d-flex align-items-center">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="LibraryHub Logo" class="logo me-3">
-            <h1 class="text-primary m-0">LibraryHub</h1>
-        </div>
-        <div>
-            {% if 'user' in session %}
-                <a href="{{ url_for('main.home') }}" class="btn btn-outline-primary btn-sm">Home</a>
-                <a href="{{ url_for('main.favorites') }}" class="btn btn-outline-success btn-sm">Favorites</a>
-                <span class="me-3">Welcome, {{ session['user'] }}!</span>
-                <a href="{{ url_for('main.logout') }}" class="btn btn-outline-danger btn-sm">Logout</a>
-            {% elif request.endpoint != 'main.login' and request.endpoint != 'main.register' %}
-                <a href="{{ url_for('main.login') }}" class="btn btn-outline-primary btn-sm">Login</a>
-                <a href="{{ url_for('main.register') }}" class="btn btn-outline-secondary btn-sm">Register</a>
-            {% endif %}
-            <button id="darkModeToggle" class="btn btn-sm btn-outline-secondary">Dark Mode</button>
-        </div>
-    </header>
+{% extends "Base.html" %}
+{% block title %}My Library — LibraryHub{% endblock %}
 
-    <!-- Main Container -->
-    <div class="container py-4">
-        <!-- Featured Book Section -->
-        {% if featured_book %}
-        <div class="featured-book mb-4 p-4 text-center border rounded">
-            <h2 class="text-success">Featured Book</h2>
-            <h4 class="text-primary">{{ featured_book.title }}</h4>
-            <p><strong>Author:</strong> {{ featured_book.author }}</p>
-            <p><strong>Year:</strong> {{ featured_book.published_year }}</p>
-            <p><strong>ISBN:</strong> {{ featured_book.isbn }}</p>
+{% block content %}
+
+<!-- Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-book"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ all_books_count }}</div>
+            <div class="stat-label">Total Books</div>
         </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ read_count }}</div>
+            <div class="stat-label">Read</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon amber"><i class="bi bi-book-half"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ reading_count }}</div>
+            <div class="stat-label">Currently Reading</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon purple"><i class="bi bi-star"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ favorite_book_ids | length }}</div>
+            <div class="stat-label">Favorites</div>
+        </div>
+    </div>
+</div>
+
+<!-- Featured Book -->
+{% if featured_book and not (search_query or category_filter or status_filter or favorites_only) %}
+<div class="featured-section">
+    <div class="featured-badge"><i class="bi bi-stars"></i> Featured Pick</div>
+    <div class="featured-title">{{ featured_book.title }}</div>
+    <div class="featured-meta">
+        <i class="bi bi-person"></i> {{ featured_book.author }}
+        {% if featured_book.published_year %}
+        &nbsp;&middot;&nbsp;<i class="bi bi-calendar3"></i> {{ featured_book.published_year }}
         {% endif %}
-
-        {% if 'user' in session %}
-        <!-- Add New Book Button -->
-        <div class="mb-4 text-center">
-            <a href="{{ url_for('main.add_book') }}" class="btn btn-primary">Add New Book</a>
-        </div>
+        {% if featured_book.category %}
+        &nbsp;&middot;&nbsp;<i class="bi bi-tag"></i> {{ featured_book.category }}
         {% endif %}
+        {% if featured_book.rating %}
+        &nbsp;&middot;&nbsp;
+        {% for i in range(1, 6) %}{{ '★' if i <= featured_book.rating else '☆' }}{% endfor %}
+        {% endif %}
+    </div>
+    <div class="featured-actions">
+        <a href="{{ url_for('main.book_detail', book_id=featured_book.id) }}"
+           class="btn btn-sm" style="background:white;color:#4f46e5;font-weight:600;">
+            <i class="bi bi-eye"></i> View Details
+        </a>
+    </div>
+</div>
+{% endif %}
 
-        <!-- Books List -->
-        <div class="container">
-            <div class="row justify-content-center">
-                {% for book in books %}
-                <div class="col-lg-3 col-md-4 col-sm-6 d-flex justify-content-center">
-                    <div class="card mb-4 shadow-sm" style="width: 18rem;">
-                        <div class="card-body text-center">
-                            <h5 class="card-title text-primary">
-                                <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="text-decoration-none">
-                                    {{ book.title }}
-                                </a>
-                            </h5>
-                            <p class="card-text">
-                                <strong>Author:</strong> {{ book.author }}<br>
-                                <strong>Year:</strong> {{ book.published_year }}<br>
-                                <strong>ISBN:</strong> {{ book.isbn }}<br>
-                                <strong>Status:</strong> 
-                                <span class="badge {{ 'bg-success' if book.status == 'Read' else 'bg-warning text-dark' }}">
-                                    {{ book.status }}
-                                </span>
-                            </p>
-                            {% if 'user' in session %}
-                            <div class="d-flex justify-content-between">
-                                <a href="{{ url_for('main.edit_book', book_id=book.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                                <form action="{{ url_for('main.delete_book', book_id=book.id) }}" method="POST">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                                </form>
-                            </div>
-                            <div class="mt-2">
-                                <form action="{{ url_for('main.toggle_favorite', book_id=book.id) }}" method="POST">
-                                    <button type="submit" class="btn btn-sm {{ 'btn-warning' if book in favorites else 'btn-outline-warning' }}">
-                                        {% if book in favorites %}★ Remove{% else %}☆ Add{% endif %}
-                                    </button>
-                                </form>
-                            </div>
-                            <div class="mt-2">
-                                <form action="{{ url_for('main.toggle_status', book_id=book.id) }}" method="POST">
-                                    <button type="submit" class="btn btn-sm btn-outline-info">
-                                        {% if book.status == 'Read' %}
-                                        Mark as To-Read
-                                        {% else %}
-                                        Mark as Read
-                                        {% endif %}
-                                    </button>
-                                </form>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <div class="page-title">My Library</div>
+        <div class="page-subtitle">Manage and track your book collection</div>
+    </div>
+    <a href="{{ url_for('main.add_book') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Add Book
+    </a>
+</div>
+
+<!-- Search & Filter -->
+<div class="search-bar-wrapper">
+    <form method="GET" action="{{ url_for('main.home') }}" class="search-bar" id="searchForm">
+        <div class="search-input-group">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" name="search" class="form-control"
+                   placeholder="Search by title or author…"
+                   value="{{ search_query }}">
+        </div>
+        <div style="min-width:160px;">
+            <select name="category" class="form-select" onchange="this.form.submit()">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}" {% if cat == category_filter %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="min-width:140px;">
+            <select name="status" class="form-select" onchange="this.form.submit()">
+                <option value="">All Statuses</option>
+                <option value="Read"    {% if status_filter == 'Read'    %}selected{% endif %}>Read</option>
+                <option value="Reading" {% if status_filter == 'Reading' %}selected{% endif %}>Reading</option>
+                <option value="Unread"  {% if status_filter == 'Unread'  %}selected{% endif %}>Unread</option>
+            </select>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.875rem;color:var(--text);white-space:nowrap;cursor:pointer;">
+            <input type="checkbox" name="favorites" value="1"
+                   {% if favorites_only %}checked{% endif %}
+                   onchange="this.form.submit()"
+                   style="accent-color:var(--primary);width:15px;height:15px;">
+            Favorites Only
+        </label>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-search"></i> Search
+        </button>
+        {% if search_query or category_filter or status_filter or favorites_only %}
+        <a href="{{ url_for('main.home') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-lg"></i> Clear
+        </a>
+        {% endif %}
+        <!-- Preserve sort when searching -->
+        <input type="hidden" name="sort" value="{{ sort_by }}">
+    </form>
+</div>
+
+<!-- Sort Bar -->
+<div class="sort-bar">
+    <span class="sort-bar-label"><i class="bi bi-sort-down"></i> Sort by</span>
+    <select class="form-select" style="max-width:180px;font-size:0.85rem;"
+            onchange="applySortUrl(this.value)" id="sortSelect">
+        <option value="date_added" {% if sort_by == 'date_added' %}selected{% endif %}>Recently Added</option>
+        <option value="title_asc"  {% if sort_by == 'title_asc'  %}selected{% endif %}>Title A → Z</option>
+        <option value="title_desc" {% if sort_by == 'title_desc' %}selected{% endif %}>Title Z → A</option>
+        <option value="author"     {% if sort_by == 'author'     %}selected{% endif %}>Author A → Z</option>
+        <option value="year_desc"  {% if sort_by == 'year_desc'  %}selected{% endif %}>Newest Year</option>
+        <option value="year_asc"   {% if sort_by == 'year_asc'   %}selected{% endif %}>Oldest Year</option>
+        <option value="rating"     {% if sort_by == 'rating'     %}selected{% endif %}>Highest Rating</option>
+    </select>
+    <span class="results-count">
+        <strong style="color:var(--text);">{{ books|length }}</strong>
+        book{{ 's' if books|length != 1 }}
+        {% if search_query or category_filter or status_filter or favorites_only %}found{% endif %}
+    </span>
+</div>
+
+<!-- Books Grid -->
+{% if books %}
+<div class="books-grid">
+    {% for book in books %}
+    {% set spine_class = {
+        'Novel': 'cat-novel',
+        'Science Fiction': 'cat-science-fiction',
+        'Biography': 'cat-biography',
+        'History': 'cat-history',
+        'Fantasy': 'cat-fantasy',
+        'Mystery': 'cat-mystery',
+        'Self-Help': 'cat-self-help',
+        'Philosophy': 'cat-philosophy',
+    }.get(book.category, 'cat-default') %}
+
+    <div class="book-card">
+        <div class="book-card-spine {{ spine_class }}"></div>
+        <div class="book-card-body">
+
+            <div class="book-card-header">
+                <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="book-title">
+                    {{ book.title }}
+                </a>
+                <form action="{{ url_for('main.toggle_favorite', book_id=book.id) }}" method="POST" style="margin:0;">
+                    <button type="submit"
+                            class="book-fav-btn {% if book.id in favorite_book_ids %}active{% endif %}"
+                            title="{% if book.id in favorite_book_ids %}Remove from favorites{% else %}Add to favorites{% endif %}">
+                        {% if book.id in favorite_book_ids %}&#9733;{% else %}&#9734;{% endif %}
+                    </button>
+                </form>
+            </div>
+
+            <!-- Star rating display -->
+            {% if book.rating %}
+            <div class="star-display" title="{{ book.rating }}/5 stars">
+                {% for i in range(1, 6) %}
+                <span class="{% if i <= book.rating %}s-filled{% else %}s-empty{% endif %}">★</span>
                 {% endfor %}
             </div>
+            {% endif %}
+
+            <div class="book-meta">
+                <div class="book-meta-row">
+                    <span class="book-meta-label">Author</span>
+                    <span>{{ book.author }}</span>
+                </div>
+                {% if book.published_year %}
+                <div class="book-meta-row">
+                    <span class="book-meta-label">Year</span>
+                    <span>{{ book.published_year }}</span>
+                </div>
+                {% endif %}
+                {% if book.category %}
+                <div class="book-meta-row">
+                    <span class="book-meta-label">Genre</span>
+                    <span>{{ book.category }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Reading progress bar -->
+            {% if book.status == 'Reading' and book.total_pages %}
+            <div class="card-progress">
+                <div class="card-progress-info">
+                    <span>{{ book.current_page or 0 }} / {{ book.total_pages }} pages</span>
+                    <span>{{ book.read_pct }}%</span>
+                </div>
+                <div class="card-progress-track">
+                    <div class="card-progress-fill" style="width:{{ book.read_pct }}%;"></div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="book-badges">
+                <span class="status-badge {{ book.status | lower }}">{{ book.status }}</span>
+                {% if book.format %}
+                <span class="format-badge">
+                    {% if book.format == 'E-book' %}<i class="bi bi-tablet"></i>{% else %}<i class="bi bi-book"></i>{% endif %}
+                    {{ book.format }}
+                </span>
+                {% endif %}
+            </div>
+
+            <div class="book-card-actions">
+                <a href="{{ url_for('main.edit_book', book_id=book.id) }}" class="btn-action edit">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+                <form action="{{ url_for('main.delete_book', book_id=book.id) }}" method="POST"
+                      onsubmit="return confirm('Delete &quot;{{ book.title }}&quot;? This cannot be undone.')">
+                    <button type="submit" class="btn-action delete" style="width:100%;">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </form>
+                <form action="{{ url_for('main.toggle_status', book_id=book.id) }}" method="POST"
+                      style="grid-column:span 2;">
+                    <button type="submit" class="btn-action status" style="width:100%;">
+                        {% if book.status == 'Unread' %}
+                            <i class="bi bi-book-half"></i> Start Reading
+                        {% elif book.status == 'Reading' %}
+                            <i class="bi bi-check-lg"></i> Mark as Read
+                        {% else %}
+                            <i class="bi bi-arrow-counterclockwise"></i> Mark as Unread
+                        {% endif %}
+                    </button>
+                </form>
+            </div>
         </div>
-
-        {% if not books %}
-        <p class="text-center text-muted mt-4">No books available.</p>
-        {% endif %}
     </div>
+    {% endfor %}
+</div>
 
-    <div class="container mt-4">
-        <!-- Search and Filter Form -->
-        <form method="GET" action="{{ url_for('main.home') }}" class="row g-3">
-            <div class="col-md-4">
-                <input type="text" name="search" class="form-control" placeholder="Search by title or author">
-            </div>
-            <div class="col-md-3">
-                <select name="category" class="form-select">
-                    <option value="">All Categories</option>
-                    <option value="Novel">Novel</option>
-                    <option value="Science Fiction">Science Fiction</option>
-                    <option value="Biography">Biography</option>
-                    <option value="Mystery">Mystery</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <input type="checkbox" name="favorites" value="1" id="favoritesOnly">
-                <label for="favoritesOnly">Favorites Only</label>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary">Search</button>
-            </div>
-        </form>
-    </div>
+{% else %}
+<div class="empty-state">
+    <span class="empty-icon">📚</span>
+    {% if search_query or category_filter or status_filter or favorites_only %}
+    <h3>No books match your filters</h3>
+    <p>Try adjusting your search or clearing the filters</p>
+    <a href="{{ url_for('main.home') }}" class="btn btn-outline-primary">
+        <i class="bi bi-x-lg"></i> Clear Filters
+    </a>
+    {% else %}
+    <h3>Your library is empty</h3>
+    <p>Start building your collection by adding your first book</p>
+    <a href="{{ url_for('main.add_book') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Add Your First Book
+    </a>
+    {% endif %}
+</div>
+{% endif %}
 
-    <!-- Footer -->
-    <footer class="text-center py-3">
-        <p>&copy; 2025 LibraryHub. All rights reserved. By Sm3th.</p>
-    </footer>
+{% endblock %}
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
-    
-    </body>
-    
-</body>
-</html>
+{% block scripts %}
+<script>
+function applySortUrl(sortValue) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('sort', sortValue);
+    window.location.href = url.toString();
+}
+</script>
+{% endblock %}

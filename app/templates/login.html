@@ -1,19 +1,39 @@
-{% extends "base.html" %}
-{% block title %}Login - LibraryHub{% endblock %}
+{% extends "Base.html" %}
+{% block title %}Login — LibraryHub{% endblock %}
+
 {% block content %}
-<div class="form-container">
-    <h2 class="text-center text-primary">Login</h2>
-    <form method="POST" action="{{ url_for('main.login') }}">
-        <div class="mb-3">
-            <label for="email" class="form-label">Email:</label>
-            <input type="email" id="email" name="email" class="form-control" required>
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <div class="brand-name">LibraryHub</div>
         </div>
-        <div class="mb-3">
-            <label for="password" class="form-label">Password:</label>
-            <input type="password" id="password" name="password" class="form-control" required>
-        </div>
-        <button type="submit" class="btn btn-primary w-100">Login</button>
-    </form>
-    <p class="text-center mt-3">Don't have an account? <a href="{{ url_for('main.register') }}">Register</a></p>
+        <h2 class="auth-title">Welcome back</h2>
+        <p class="auth-subtitle">Sign in to access your library</p>
+
+        <form method="POST" action="{{ url_for('main.login') }}">
+            <div class="mb-3">
+                <label for="email" class="form-label">Email address</label>
+                <input type="email" id="email" name="email" class="form-control"
+                       placeholder="you@example.com" required autofocus>
+            </div>
+            <div class="mb-4">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password" class="form-control"
+                       placeholder="Your password" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 btn-lg">
+                <i class="bi bi-box-arrow-in-right"></i> Sign In
+            </button>
+        </form>
+
+        <div class="divider"></div>
+
+        <p class="text-center" style="font-size:0.875rem;color:var(--text-muted);">
+            Don't have an account?
+            <a href="{{ url_for('main.register') }}" style="color:var(--primary);font-weight:500;text-decoration:none;">
+                Create one
+            </a>
+        </p>
+    </div>
 </div>
 {% endblock %}

@@ -1,59 +1,90 @@
-{% extends "base.html" %}
-{% block title %}Add Book - LibraryHub{% endblock %}
+{% extends "Base.html" %}
+{% block title %}Add Book — LibraryHub{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <h2 class="text-center text-primary">Add New Book</h2>
-    <form method="POST" class="mt-4" action="{{ url_for('main.add_book') }}" enctype="multipart/form-data">
-        <!-- Book Title -->
+<div class="page-header" style="max-width:680px;margin:0 auto 24px;">
+    <div>
+        <div class="page-title"><i class="bi bi-plus-circle" style="color:var(--primary);"></i> Add New Book</div>
+        <div class="page-subtitle">Add a book to your personal library</div>
+    </div>
+    <a href="{{ url_for('main.home') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back
+    </a>
+</div>
+
+<div class="form-card">
+    <form method="POST" action="{{ url_for('main.add_book') }}">
+
+        <div class="form-section-title">Book Information</div>
         <div class="mb-3">
-            <label for="title" class="form-label">Book Title</label>
-            <input type="text" id="title" name="title" class="form-control" placeholder="Enter book title" required>
+            <label for="title" class="form-label">Book Title <span style="color:#ef4444;">*</span></label>
+            <input type="text" id="title" name="title" class="form-control"
+                   placeholder="e.g. The Great Gatsby" maxlength="100" required>
         </div>
-        <!-- Author -->
-        <div class="mb-3">
-            <label for="author" class="form-label">Author</label>
-            <input type="text" id="author" name="author" class="form-control" placeholder="Enter author name" required>
+
+        <div class="form-row">
+            <div class="mb-3">
+                <label for="author" class="form-label">Author <span style="color:#ef4444;">*</span></label>
+                <input type="text" id="author" name="author" class="form-control"
+                       placeholder="e.g. F. Scott Fitzgerald" maxlength="100" required>
+            </div>
+            <div class="mb-3">
+                <label for="published_year" class="form-label">Published Year <span style="color:#ef4444;">*</span></label>
+                <input type="number" id="published_year" name="published_year" class="form-control"
+                       placeholder="e.g. 1925" min="1000" max="2099" required>
+            </div>
         </div>
-        <!-- Published Year -->
+
         <div class="mb-3">
-            <label for="published_year" class="form-label">Published Year</label>
-            <input type="number" id="published_year" name="published_year" class="form-control" placeholder="Enter published year" required>
+            <label for="isbn" class="form-label">ISBN <span style="color:#ef4444;">*</span></label>
+            <input type="text" id="isbn" name="isbn" class="form-control"
+                   placeholder="e.g. 9780316148410" maxlength="13" required>
         </div>
-        <!-- ISBN -->
-        <div class="mb-3">
-            <label for="isbn" class="form-label">ISBN</label>
-            <input type="text" id="isbn" name="isbn" class="form-control" placeholder="Enter ISBN" required>
+
+        <div class="mb-4">
+            <label for="description" class="form-label">Description</label>
+            <textarea id="description" name="description" class="form-control" rows="3"
+                      placeholder="A brief summary of the book (optional)"></textarea>
         </div>
-        <!-- Category -->
-        <div class="mb-3">
-            <label for="category" class="form-label">Category</label>
-            <select id="category" name="category" class="form-select">
-                <option value="Novel">Novel</option>
-                <option value="Science Fiction">Science Fiction</option>
-                <option value="Biography">Biography</option>
-                <option value="History">History</option>
-                <option value="Fantasy">Fantasy</option>
-            </select>
+
+        <div class="form-section-title" style="margin-top:24px;">Details</div>
+        <div class="form-row">
+            <div class="mb-3">
+                <label for="category" class="form-label">Category</label>
+                <select id="category" name="category" class="form-select">
+                    <option value="">— Select category —</option>
+                    <option value="Novel">Novel</option>
+                    <option value="Science Fiction">Science Fiction</option>
+                    <option value="Biography">Biography</option>
+                    <option value="History">History</option>
+                    <option value="Fantasy">Fantasy</option>
+                    <option value="Mystery">Mystery</option>
+                    <option value="Self-Help">Self-Help</option>
+                    <option value="Philosophy">Philosophy</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="format" class="form-label">Format</label>
+                <select id="format" name="format" class="form-select">
+                    <option value="Physical">Physical</option>
+                    <option value="E-book">E-book</option>
+                </select>
+            </div>
         </div>
-        <!-- Reading Status -->
-        <div class="mb-3">
+
+        <div class="mb-4">
             <label for="status" class="form-label">Reading Status</label>
             <select id="status" name="status" class="form-select">
-                <option value="Read">Read</option>
-                <option value="Reading">Reading</option>
                 <option value="Unread">Unread</option>
+                <option value="Reading">Currently Reading</option>
+                <option value="Read">Read</option>
             </select>
         </div>
-        <!-- Format -->
-        <div class="mb-3">
-            <label for="format" class="form-label">Format</label>
-            <select id="format" name="format" class="form-select">
-                <option value="E-book">E-book</option>
-                <option value="Physical">Physical</option>
-            </select>
-        </div>
-        <!-- Submit Button -->
-        <button type="submit" class="btn btn-primary w-100">Add Book</button>
+
+        <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-plus-lg"></i> Add Book to Library
+        </button>
     </form>
 </div>
 {% endblock %}

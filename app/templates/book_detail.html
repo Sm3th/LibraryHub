@@ -1,27 +1,240 @@
-{% extends 'base.html' %}
+{% extends "Base.html" %}
+{% block title %}{{ book.title }} — LibraryHub{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="card shadow-sm p-4 mt-4">
-        <h2 class="text-primary">{{ book.title }}</h2>
-        <p><strong>Author:</strong> {{ book.author }}</p>
-        <p><strong>Year:</strong> {{ book.published_year }}</p>
-        <p><strong>ISBN:</strong> {{ book.isbn }}</p>
-        <p><strong>Description:</strong> {{ book.description or "No description available." }}</p>
 
-        <!-- Notes Section -->
-        {% if 'user_id' in session and session['user_id'] == book.user_id %}
-        <hr>
-        <h4>Your Notes:</h4>
-        <form action="{{ url_for('main.edit_notes', book_id=book.id) }}" method="POST">
-            <textarea name="notes" class="form-control" rows="4">{{ book.notes or '' }}</textarea>
-            <button type="submit" class="btn btn-success mt-3">Save Notes</button>
+<div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <a href="{{ url_for('main.home') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Library
+    </a>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a href="{{ url_for('main.edit_book', book_id=book.id) }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-pencil"></i> Edit
+        </a>
+        <form action="{{ url_for('main.toggle_favorite', book_id=book.id) }}" method="POST" style="margin:0;">
+            <button type="submit" class="btn btn-sm"
+                    style="background:{% if is_favorite %}#fef3c7{% else %}var(--bg-sidebar){% endif %};
+                           color:{% if is_favorite %}#92400e{% else %}var(--text){% endif %};
+                           border:1px solid var(--border);">
+                <i class="bi bi-star{% if is_favorite %}-fill{% endif %}"></i>
+                {% if is_favorite %}Unfavorite{% else %}Add to Favorites{% endif %}
+            </button>
         </form>
-        {% else %}
-        <p><strong>Notes:</strong> {{ book.notes or "No notes added yet." }}</p>
+        <form action="{{ url_for('main.delete_book', book_id=book.id) }}" method="POST" style="margin:0;"
+              onsubmit="return confirm('Delete this book? This cannot be undone.')">
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-trash"></i> Delete
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="book-detail-grid">
+
+    <!-- Main Info -->
+    <div class="book-detail-main">
+
+        <!-- Category spine accent -->
+        {% set spine_color = {
+            'Novel': 'linear-gradient(90deg,#4f46e5,#818cf8)',
+            'Science Fiction': 'linear-gradient(90deg,#0891b2,#67e8f9)',
+            'Biography': 'linear-gradient(90deg,#d97706,#fcd34d)',
+            'History': 'linear-gradient(90deg,#b45309,#fde68a)',
+            'Fantasy': 'linear-gradient(90deg,#7c3aed,#c4b5fd)',
+            'Mystery': 'linear-gradient(90deg,#be185d,#f9a8d4)',
+            'Self-Help': 'linear-gradient(90deg,#059669,#6ee7b7)',
+            'Philosophy': 'linear-gradient(90deg,#d97706,#fb923c)',
+        }.get(book.category, 'linear-gradient(90deg,#64748b,#94a3b8)') %}
+        <div style="height:5px;border-radius:3px;background:{{ spine_color }};margin-bottom:20px;"></div>
+
+        <!-- Status badges -->
+        <div class="book-badges" style="margin-bottom:16px;">
+            <span class="status-badge {{ book.status | lower }}">{{ book.status }}</span>
+            {% if book.format %}
+            <span class="format-badge">
+                {% if book.format == 'E-book' %}<i class="bi bi-tablet"></i>{% else %}<i class="bi bi-book"></i>{% endif %}
+                {{ book.format }}
+            </span>
+            {% endif %}
+            {% if book.category %}
+            <span class="format-badge"><i class="bi bi-tag"></i> {{ book.category }}</span>
+            {% endif %}
+        </div>
+
+        <h1 class="book-detail-title">{{ book.title }}</h1>
+        <p class="book-detail-author">
+            <i class="bi bi-person" style="color:var(--text-muted);"></i> {{ book.author }}
+        </p>
+
+        <!-- Info grid -->
+        <div class="book-info-grid">
+            {% if book.published_year %}
+            <div class="book-info-item">
+                <label>Published Year</label>
+                <span>{{ book.published_year }}</span>
+            </div>
+            {% endif %}
+            {% if book.isbn %}
+            <div class="book-info-item">
+                <label>ISBN</label>
+                <span>{{ book.isbn }}</span>
+            </div>
+            {% endif %}
+            <div class="book-info-item">
+                <label>Reading Status</label>
+                <span>{{ book.status }}</span>
+            </div>
+            {% if book.format %}
+            <div class="book-info-item">
+                <label>Format</label>
+                <span>{{ book.format }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Description -->
+        {% if book.description %}
+        <div class="divider"></div>
+        <h5 style="font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;">
+            <i class="bi bi-text-paragraph" style="color:var(--primary);"></i> Description
+        </h5>
+        <p style="font-size:0.9rem;color:var(--text-muted);line-height:1.75;">{{ book.description }}</p>
         {% endif %}
 
-        <a href="{{ url_for('main.home') }}" class="btn btn-secondary mt-3">Back to Home</a>
+        <!-- Toggle Status -->
+        <div class="divider"></div>
+        <form action="{{ url_for('main.toggle_status', book_id=book.id) }}" method="POST" style="margin:0;">
+            <button type="submit" class="btn btn-sm"
+                    style="background:#d1fae5;color:#065f46;border:none;font-weight:500;display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;">
+                {% if book.status == 'Unread' %}
+                <i class="bi bi-book-half"></i> Start Reading
+                {% elif book.status == 'Reading' %}
+                <i class="bi bi-check-lg"></i> Mark as Read
+                {% else %}
+                <i class="bi bi-arrow-counterclockwise"></i> Mark as Unread
+                {% endif %}
+            </button>
+        </form>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="book-detail-sidebar" style="display:flex;flex-direction:column;gap:20px;">
+
+        <!-- Star Rating -->
+        {% if 'user_id' in session and session['user_id'] == book.user_id %}
+        <div>
+            <div class="sidebar-section-title">
+                <i class="bi bi-star-fill" style="color:#f59e0b;"></i> My Rating
+            </div>
+            {% if book.rating %}
+            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:10px;">
+                Current: <strong style="color:#f59e0b;">
+                {% for i in range(1,6) %}{{ '★' if i <= book.rating else '☆' }}{% endfor %}
+                </strong> ({{ book.rating }}/5)
+            </div>
+            {% else %}
+            <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">Not rated yet</div>
+            {% endif %}
+            <form action="{{ url_for('main.rate_book', book_id=book.id) }}" method="POST">
+                <div class="star-widget" title="Click a star to rate">
+                    {% for i in range(5, 0, -1) %}
+                    <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}"
+                           {% if book.rating == i %}checked{% endif %}>
+                    <label for="star{{ i }}" title="{{ i }} star{{ 's' if i > 1 }}">★</label>
+                    {% endfor %}
+                </div>
+                <div style="display:flex;gap:8px;margin-top:12px;">
+                    <button type="submit" class="btn btn-primary btn-sm" style="flex:1;">
+                        <i class="bi bi-check-lg"></i> Save Rating
+                    </button>
+                </div>
+            </form>
+            {% if book.rating %}
+            <form action="{{ url_for('main.rate_book', book_id=book.id) }}" method="POST" style="margin-top:8px;">
+                <input type="hidden" name="rating" value="0">
+                <button type="submit" class="btn btn-outline-secondary btn-sm" style="width:100%;">
+                    <i class="bi bi-x"></i> Clear Rating
+                </button>
+            </form>
+            {% endif %}
+        </div>
+
+        <div class="divider" style="margin:0;"></div>
+
+        <!-- Reading Progress -->
+        <div>
+            <div class="sidebar-section-title">
+                <i class="bi bi-bar-chart-steps" style="color:var(--primary);"></i> Reading Progress
+            </div>
+
+            {% if book.total_pages %}
+            <div class="progress-section" style="margin-bottom:12px;">
+                <div class="progress-section-header">
+                    <span class="progress-section-title">Progress</span>
+                    <span class="progress-pct">{{ book.read_pct }}%</span>
+                </div>
+                <div class="progress-track-lg">
+                    <div class="progress-fill-lg" style="width:{{ book.read_pct }}%;"></div>
+                </div>
+                <div class="progress-pages-text">
+                    {{ book.current_page or 0 }} of {{ book.total_pages }} pages read
+                </div>
+            </div>
+            {% endif %}
+
+            <form action="{{ url_for('main.update_progress', book_id=book.id) }}" method="POST">
+                <div class="progress-form-row">
+                    <div>
+                        <label>Current Page</label>
+                        <input type="number" name="current_page" class="form-control"
+                               value="{{ book.current_page or '' }}" min="0"
+                               placeholder="0">
+                    </div>
+                    <div>
+                        <label>Total Pages</label>
+                        <input type="number" name="total_pages" class="form-control"
+                               value="{{ book.total_pages or '' }}" min="1"
+                               placeholder="300">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-arrow-repeat"></i> Update
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="divider" style="margin:0;"></div>
+
+        <!-- Notes -->
+        <div style="flex:1;">
+            <div class="sidebar-section-title">
+                <i class="bi bi-journal-text" style="color:var(--primary);"></i> My Notes
+            </div>
+            <form action="{{ url_for('main.edit_notes', book_id=book.id) }}" method="POST">
+                <textarea name="notes" class="form-control" rows="7"
+                          placeholder="Write your thoughts, quotes, or takeaways here…">{{ book.notes or '' }}</textarea>
+                <button type="submit" class="btn btn-primary w-100" style="margin-top:10px;">
+                    <i class="bi bi-floppy"></i> Save Notes
+                </button>
+            </form>
+            {% if book.notes %}
+            <p style="font-size:0.72rem;color:var(--text-muted);margin-top:8px;">
+                <i class="bi bi-lock"></i> Notes are private and only visible to you.
+            </p>
+            {% endif %}
+        </div>
+        {% else %}
+        <!-- Non-owner view -->
+        <div>
+            <div class="sidebar-section-title">
+                <i class="bi bi-journal-text" style="color:var(--primary);"></i> Notes
+            </div>
+            <div style="background:var(--bg);border-radius:var(--radius-sm);padding:16px;font-size:0.875rem;color:var(--text-muted);min-height:80px;">
+                {{ book.notes or 'No notes added yet.' }}
+            </div>
+        </div>
+        {% endif %}
+
     </div>
 </div>
 {% endblock %}
